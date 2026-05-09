@@ -1,8 +1,11 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const translate = require('@vitalets/google-translate-api');
 
+console.log("TOKEN EXISTS:", !!process.env.TOKEN);
+console.log("TOKEN TYPE:", typeof process.env.TOKEN);
+console.log("TOKEN LENGTH:", process.env.TOKEN?.length);
+
 const TOKEN = process.env.TOKEN;
-const CHANNEL_ID = "1494693379555070035"; // optional but recommended
 
 const client = new Client({
   intents: [
@@ -12,37 +15,34 @@ const client = new Client({
   ]
 });
 
-client.on('clientReady', () => {
-  console.log(`Logged in as ${client.user.tag}`);
+client.once('ready', () => {
+  console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
-  // only one channel (optional)
-  // if (message.channel.id !== CHANNEL_ID) return;
-
   try {
     if (!message.content || message.content.length < 2) return;
 
-    // detect language
     const detected = await translate(message.content, { to: 'en' });
     const lang = detected.from.language.iso;
 
-    // choose target
     const targetLang = lang === 'ru' ? 'en' : 'ru';
 
-    const result = await translate(message.content, { to: targetLang });
+    const result = await translate(message.content, {
+      to: targetLang
+    });
 
-    // avoid useless translation
     if (result.text === message.content) return;
 
-    // reply UNDER the message (clean!)
-    await message.reply(`${result.text}`);
+    await message.reply(result.text);
 
   } catch (err) {
-    console.error("ERROR:", err);
+    console.error("TRANSLATE ERROR:", err);
   }
 });
 
-client.login(TOKEN);
+client.login(TOKEN).catch(err => {
+  console.error("LOGIN ERROR:", err);
+});
